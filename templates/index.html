@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SysML2 Visualizer</title>
+    <link rel="stylesheet" href="../static/styles.css">
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <p class="eyebrow">Python + HTML SysML2 Viewer</p>
+        <h1 id="model-title">SysML2 Visualizer</h1>
+        <p id="model-description" class="lead">Loading sample mission model...</p>
+
+        <div class="view-list">
+          <button class="view-button is-active" data-view="ov1">OV-1</button>
+          <button class="view-button" data-view="bdd">BDD</button>
+          <button class="view-button" data-view="ibd">IBD</button>
+          <button class="view-button" data-view="activity">Activity</button>
+          <button class="view-button" data-view="sequence">Sequence</button>
+          <button class="view-button" data-view="analysis">Analysis</button>
+          <button class="view-button" data-view="simulation">Simulation</button>
+        </div>
+
+        <section class="import-panel">
+          <h2>SysML2 Input</h2>
+          <p class="import-copy">Paste a SysML2-style textual specification or load a local `.sysml` or `.txt` file.</p>
+          <label class="file-picker" for="model-file">Choose File</label>
+          <input id="model-file" type="file" accept=".sysml,.txt,text/plain">
+          <textarea id="model-text" spellcheck="false" aria-label="Model text input"></textarea>
+          <div class="import-actions">
+            <button id="load-text" class="action-button" type="button">Parse SysML2</button>
+            <button id="reset-model" class="action-button action-button-secondary" type="button">Reset Sample</button>
+          </div>
+          <p id="import-status" class="import-status">Sample SysML2 text loaded from the bundled data set.</p>
+        </section>
+
+        <section class="notes">
+          <h2>Included Views</h2>
+          <ul>
+            <li>DoDAF-inspired operational concept view</li>
+            <li>SysML block definition diagram</li>
+            <li>SysML internal block diagram</li>
+            <li>Activity flow visualization</li>
+            <li>SysML sequence diagram</li>
+            <li>Model similarity analysis with rationale</li>
+            <li>Simulation-readiness grading from the SENTINEL Generate-Simulate-Verify paper</li>
+          </ul>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="workspace-header">
+          <div>
+            <p class="eyebrow">Current View</p>
+            <h2 id="view-title"></h2>
+          </div>
+          <p id="view-summary" class="summary"></p>
+        </header>
+
+        <section class="toolbar-card">
+          <div class="toolbar-group">
+            <label class="toolbar-label" for="dataset-path">Corpus Model</label>
+            <input id="dataset-path" list="dataset-options" class="toolbar-input" placeholder="sample_model.sysml or data/000787/000787.sysml">
+            <datalist id="dataset-options"></datalist>
+            <button id="load-dataset" class="toolbar-button" type="button">Load</button>
+          </div>
+
+          <div class="toolbar-group">
+            <label class="toolbar-label" for="layout-select">Layout</label>
+            <select id="layout-select" class="toolbar-input">
+              <option value="auto">Auto</option>
+              <option value="hierarchy">Hierarchy</option>
+              <option value="grid">Grid</option>
+              <option value="radial">Radial</option>
+            </select>
+          </div>
+
+          <div class="toolbar-group toolbar-group-grow">
+            <label class="toolbar-label" for="scope-select">Scope</label>
+            <select id="scope-select" class="toolbar-input">
+              <option value="all">Whole View</option>
+              <option value="focus">Selection + Neighbors</option>
+              <option value="search">Search Results</option>
+            </select>
+          </div>
+
+          <div class="toolbar-group toolbar-group-grow">
+            <label class="toolbar-label" for="detail-select">Detail</label>
+            <select id="detail-select" class="toolbar-input">
+              <option value="standard">Standard</option>
+              <option value="compact">Compact</option>
+              <option value="full">Full</option>
+            </select>
+          </div>
+
+          <div class="toolbar-group toolbar-group-grow">
+            <label class="toolbar-label" for="search-input">Search</label>
+            <input id="search-input" class="toolbar-input" placeholder="Search actors, blocks, parts, actions">
+            <button id="search-next" class="toolbar-button" type="button">Focus</button>
+          </div>
+
+          <div class="toolbar-group">
+            <button id="zoom-in" class="toolbar-button" type="button">+</button>
+            <button id="zoom-out" class="toolbar-button" type="button">-</button>
+            <button id="fit-view" class="toolbar-button" type="button">Fit</button>
+            <button id="reset-view" class="toolbar-button" type="button">Reset</button>
+            <button id="export-svg" class="toolbar-button toolbar-button-secondary" type="button">Export SVG</button>
+          </div>
+        </section>
+
+        <section id="analysis-status" class="status-card"></section>
+
+        <section id="ov1-editor-panel" class="panel-card ov1-editor-panel is-hidden">
+          <div class="panel-header">
+            <div>
+              <h3>OV-1 Editor</h3>
+              <p class="panel-copy">Drag components from the current SysML file into the OV-1 canvas, reposition actors, add arrows, and save the resulting view metadata back into the SysML text.</p>
+            </div>
+          </div>
+
+          <div class="ov1-editor-toolbar">
+            <button id="ov1-edit-toggle" class="toolbar-button" type="button">Enable Editing</button>
+            <button id="ov1-arrow-tool" class="toolbar-button toolbar-button-secondary" type="button">Arrow Tool</button>
+            <button id="ov1-save" class="toolbar-button" type="button">Save to SysML</button>
+            <button id="ov1-reset-edits" class="toolbar-button toolbar-button-secondary" type="button">Reset OV-1 Edits</button>
+          </div>
+
+          <p id="ov1-editor-status" class="ov1-editor-status">OV-1 editing is available when this view is active.</p>
+
+          <div>
+            <p class="toolbar-label">Components From File</p>
+            <div id="ov1-palette" class="ov1-palette"></div>
+          </div>
+        </section>
+
+        <section class="workbench">
+          <aside class="explorer-panel panel-card">
+            <div class="panel-header">
+              <h3>Explorer</h3>
+              <input id="explorer-filter" class="panel-input" placeholder="Filter explorer">
+            </div>
+            <div id="explorer-tree" class="explorer-tree"></div>
+          </aside>
+
+          <section class="diagram-panel">
+            <div class="canvas-card">
+              <svg id="diagram" viewBox="0 0 1040 560" role="img" aria-label="SysML2 visualizer diagram"></svg>
+              <div id="analysis-view" class="analysis-view is-hidden" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <aside class="inspector-panel">
+            <section class="panel-card overview-card">
+              <div class="panel-header">
+                <h3>Overview</h3>
+                <p class="panel-copy">Pan, zoom, and focus results like a graph workbench.</p>
+              </div>
+              <svg id="overview" viewBox="0 0 260 180" aria-label="Diagram overview"></svg>
+            </section>
+
+            <section class="panel-card">
+              <div class="panel-header">
+                <h3>Inspector</h3>
+                <p class="panel-copy">Selection details synchronized with the active view.</p>
+              </div>
+              <div id="inspector" class="inspector"></div>
+            </section>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <script id="embedded-sysml" type="text/plain">
+package JointHumanitarianAssistanceMission {
+  doc "A sample SysML2-style mission model rendered into operational, structural, and behavioral views."
+
+  part def MissionSystem {
+    attribute missionId : String;
+    attribute status : MissionStatus;
+    operation planSortie();
+    operation allocateSupplies();
+
+    part planner : MissionPlanner;
+    part airCell : AirDeliveryCell;
+    part seaCell : SeaDeliveryCell;
+    part supportCell : SustainmentCell;
+
+    connect planner.ordersOut -> airCell.ordersIn "airTasking";
+    connect planner.ordersOut -> seaCell.ordersIn "seaTasking";
+    connect airCell.statusOut -> supportCell.demandIn "replenishmentRequest";
+    connect seaCell.statusOut -> supportCell.demandIn "cargoConsumption";
+  }
+
+  part def MissionPlanner {
+    port ordersOut;
+  }
+
+  part def AirDeliveryCell {
+    port ordersIn;
+    port statusOut;
+  }
+
+  part def SeaDeliveryCell {
+    port ordersIn;
+    port statusOut;
+  }
+
+  part def SustainmentCell {
+    port demandIn;
+  }
+
+  part def JointTaskForce {
+    attribute role : String;
+  }
+
+  part def AirAsset {
+    attribute tailNumber : String;
+    attribute payloadCapacityKg : Real;
+    operation launch();
+    operation deliver();
+  }
+
+  part def SeaAsset {
+    attribute hullNumber : String;
+    attribute berthCapacity : Integer;
+    operation sail();
+    operation offload();
+  }
+
+  part def ReliefAgency {
+    attribute region : String;
+  }
+
+  part def AffectedPopulation {
+    attribute location : String;
+  }
+
+  item def ReliefPackage {
+    attribute priority : Integer;
+    attribute massKg : Real;
+    operation inspect();
+  }
+
+  part jtf : JointTaskForce;
+  part airwing : AirAsset;
+  part sealift : SeaAsset;
+  part relief : ReliefAgency;
+  part population : AffectedPopulation;
+
+  flow jtf -> airwing "Tasking Orders";
+  flow jtf -> sealift "Tasking Orders";
+  flow airwing -> relief "Rapid Airlift";
+  flow sealift -> relief "Bulk Sustainment";
+  flow relief -> population "Food / Water / Medical Aid";
+
+  action def ReliefSortie {
+    start start;
+    action assessDemand;
+    action planSortiePackage;
+    action loadReliefSupplies;
+    decision weatherAcceptable;
+    action launchMission;
+    action replanRouteTiming;
+    end complete;
+
+    flow start -> assessDemand;
+    flow assessDemand -> planSortiePackage;
+    flow planSortiePackage -> loadReliefSupplies;
+    flow loadReliefSupplies -> weatherAcceptable;
+    flow weatherAcceptable -> launchMission "yes";
+    flow weatherAcceptable -> replanRouteTiming "no";
+    flow replanRouteTiming -> planSortiePackage;
+    flow launchMission -> complete;
+  }
+}
+    </script>
+    <script src="../static/app.js"></script>
+  </body>
+</html>
